@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}任务详情{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">任务详情</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ task.title }}</h3>
+        </div>
+        <div class="card-body">
+            <!-- 任务基本信息 -->
+            <div class="mb-4">
+                <h4>基本信息</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>创建时间：</strong><span class="datetime-display" data-datetime="{{ task.created_at.isoformat }}"></span></p>
+                        <p><strong>截止时间：</strong>
+                            {% if task.due_date %}
+                                <span class="datetime-display" data-datetime="{{ task.due_date.isoformat }}"></span>
+                            {% else %}
+                                无
+                            {% endif %}
+                        </p>
+                        <p><strong>优先级：</strong>
+                            {% if task.priority == 'high' %}
+                                <span class="badge bg-danger">高</span>
+                            {% elif task.priority == 'medium' %}
+                                <span class="badge bg-warning">中</span>
+                            {% else %}
+                                <span class="badge bg-info">低</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>提醒时间：</strong>
+                            {% if task.reminder_time %}
+                                <span class="datetime-display" data-datetime="{{ task.reminder_time.isoformat }}"></span>
+                            {% else %}
+                                无
+                            {% endif %}
+                        </p>
+                        <p><strong>提醒周期：</strong>
+                            {% if task.reminder_period == 'once' %}一次性
+                            {% elif task.reminder_period == 'daily' %}每天
+                            {% elif task.reminder_period == 'weekly' %}每周
+                            {% elif task.reminder_period == 'monthly' %}每月
+                            {% elif task.reminder_period == 'yearly' %}每年
+                            {% elif task.reminder_period == 'custom' %}自定义
+                            {% else %}无
+                            {% endif %}
+                        </p>
+                        <p><strong>是否已提醒：</strong>{{ task.is_reminded|yesno:"是,否" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 任务描述 -->
+            <div class="mb-4">
+                <h4>描述</h4>
+                <p class="card-text">{{ task.description|default:"无" }}</p>
+            </div>
+            
+            <!-- 任务标签 -->
+            <div class="mb-4">
+                <h4>标签</h4>
+                {% if tags %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tag in tags %}
+                            <span class="badge bg-primary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>无标签</p>
+                {% endif %}
+            </div>
+            
+            <!-- 任务进度 -->
+            <div class="mb-4">
+                <h4>进度</h4>
+                {% if task.due_date and task.status != 'completed' %}
+                    {% if task.due_date|date:'Y-m-d H:i' < now|date:'Y-m-d H:i' %}
+                        <div class="alert alert-danger mb-3" role="alert">
+                            <strong>任务已超时！</strong> 截止时间已过，但任务尚未完成。
+                        </div>
+                    {% endif %}
+                {% endif %}
+                <div class="d-flex justify-content-between">
+                    {% if progress_nodes %}
+                        {% for node in progress_nodes %}
+                            <div class="text-center">
+                                <div class="d-flex justify-content-center">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; {% if task.status == 'completed' and node == '已完成' %}background-color: #0d6efd; color: white;{% elif task.status == 'in_progress' and node == '进行中' %}background-color: #0d6efd; color: white;{% elif task.status == 'pending' and node == '待办' %}background-color: #0d6efd; color: white;{% else %}background-color: #e9ecef; color: #6c757d;{% endif %}">
+                                        {% if task.status == 'completed' and node == '已完成' %}<i class="bi bi-check"></i>{% elif task.status == 'in_progress' and node == '进行中' %}<i class="bi bi-check"></i>{% elif task.status == 'pending' and node == '待办' %}<i class="bi bi-check"></i>{% else %}{{ forloop.counter }}{% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="{% if task.status == 'completed' and node == '已完成' %}font-weight-bold text-primary{% elif task.status == 'in_progress' and node == '进行中' %}font-weight-bold text-primary{% elif task.status == 'pending' and node == '待办' %}font-weight-bold text-primary{% else %}text-muted{% endif %}">{{ node }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 默认进度节点 -->
+                        <div class="text-center">
+                            <div class="d-flex justify-content-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; {% if task.status == 'pending' %}background-color: #0d6efd; color: white;{% else %}background-color: #e9ecef; color: #6c757d;{% endif %}">
+                                    {% if task.status == 'pending' %}<i class="bi bi-check"></i>{% else %}1{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="{% if task.status == 'pending' %}font-weight-bold text-primary{% else %}text-muted{% endif %}">待办</span>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="d-flex justify-content-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; {% if task.status == 'in_progress' %}background-color: #0d6efd; color: white;{% else %}background-color: #e9ecef; color: #6c757d;{% endif %}">
+                                    {% if task.status == 'in_progress' %}<i class="bi bi-check"></i>{% else %}2{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="{% if task.status == 'in_progress' %}font-weight-bold text-primary{% else %}text-muted{% endif %}">进行中</span>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="d-flex justify-content-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; {% if task.status == 'completed' %}background-color: #0d6efd; color: white;{% else %}background-color: #e9ecef; color: #6c757d;{% endif %}">
+                                    {% if task.status == 'completed' %}<i class="bi bi-check"></i>{% else %}3{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="{% if task.status == 'completed' %}font-weight-bold text-primary{% else %}text-muted{% endif %}">已完成</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="mt-4">
+                <a href="{% url 'edit_task' task.id %}" class="btn btn-primary">编辑任务</a>
+                <a href="{% url 'delete_task' task.id %}" class="btn btn-danger">删除任务</a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">返回超级管理员面板</a>
+                {% else %}
+                <a href="{% url 'task_list' %}" class="btn btn-secondary">返回任务列表</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

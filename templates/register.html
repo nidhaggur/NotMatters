@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}注册 - 事项提示器{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center min-vh-80 align-items-start py-3">
+        <div class="col-md-6">
+            <div class="card shadow-lg rounded-3 overflow-hidden border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" class="mb-3" style="width: 64px; height: 64px; border-radius: 16px;">
+                        <h2 class="text-center mb-2" data-lang="registerTitle">用户注册</h2>
+                        <p class="text-muted" data-lang="registerSubtitle">创建新账号，开始管理您的任务</p>
+                    </div>
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ form.non_field_errors }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                        <div class="form-group mb-4">
+                            <label for="username" class="form-label" data-lang="registerUsername">
+                                <i class="bi bi-person-circle me-2 text-primary"></i>用户名
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.username.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group mb-4">
+                            <label for="email" class="form-label">
+                                <i class="bi bi-envelope me-2 text-primary"></i>邮箱
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.email.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group mb-4">
+                            <label for="password1" class="form-label" data-lang="registerPassword">
+                                <i class="bi bi-lock me-2 text-primary"></i>密码
+                            </label>
+                            <input type="password" class="form-control" id="password1" name="password1" required>
+                            {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.password1.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group mb-4">
+                            <label for="password2" class="form-label" data-lang="registerConfirmPassword">
+                                <i class="bi bi-lock-fill me-2 text-primary"></i>确认密码
+                            </label>
+                            <input type="password" class="form-control" id="password2" name="password2" required>
+                            {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.password2.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill shadow-sm" data-lang="registerSubmit">
+                            <i class="bi bi-person-plus me-2"></i>注册
+                        </button>
+                        <div class="text-center mt-4">
+                            <a href="{% url 'login' %}" class="text-primary text-decoration-none" data-lang="registerLogin">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>已有账号？立即登录
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        border-color: #4099ff;
+        box-shadow: 0 0 0 0.2rem rgba(64, 153, 255, 0.25);
+    }
+    .btn-primary {
+        background-color: #4099ff;
+        border-color: #4099ff;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #3086e8;
+        border-color: #3086e8;
+        transform: translateY(-1px);
+    }
+    .card {
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}

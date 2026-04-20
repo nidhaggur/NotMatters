@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - 事项提示器{% endblock %}
+
+{% block content %}
+    <h2 class="mb-4" data-lang="{{ page_title_key }}">{{ page_title }}</h2>
+    
+    {% if error %}
+    <div class="alert alert-danger mb-4" role="alert">
+        {{ error }}
+    </div>
+    {% endif %}
+    
+    <form method="post" action="{% if task %}{% url 'edit_task' task.id %}{% else %}{% url 'add_task' %}{% endif %}">
+        {% csrf_token %}
+        <div class="row g-3">
+            <!-- 标题 -->
+            <div class="col-12">
+                <label for="title" class="form-label mb-1" data-lang="taskTitle">标题</label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ task.title|default:'' }}" required>
+            </div>
+            
+            <!-- 描述 -->
+            <div class="col-12">
+                <label for="description" class="form-label mb-1" data-lang="taskDescription">描述</label>
+                <textarea class="form-control" id="description" name="description" rows="2">{{ task.description|default:'' }}</textarea>
+            </div>
+            
+            <!-- 提醒时间 -->
+            <div class="col-md-6">
+                <label class="form-label mb-1" data-lang="taskReminder">提醒时间</label>
+                <div class="d-flex gap-2">
+                    <!-- 年 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="reminder_year" name="reminder_year" placeholder="年" min="2020" max="2100" value="{{ task.reminder_time|date:'Y'|default:'' }}">
+                    </div>
+                    <!-- 月 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="reminder_month" name="reminder_month" placeholder="月" min="1" max="12" value="{{ task.reminder_time|date:'m'|default:'' }}">
+                    </div>
+                    <!-- 日 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="reminder_day" name="reminder_day" placeholder="日" min="1" max="31" value="{{ task.reminder_time|date:'d'|default:'' }}">
+                    </div>
+                    <!-- 时 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="reminder_hour" name="reminder_hour" placeholder="时" min="0" max="23" value="{{ task.reminder_time|date:'H'|default:'' }}">
+                    </div>
+                    <!-- 分 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="reminder_minute" name="reminder_minute" placeholder="分" min="0" max="59" value="{{ task.reminder_time|date:'i'|default:'' }}">
+                    </div>
+                    <input type="hidden" id="reminder_time" name="reminder_time">
+                </div>
+            </div>
+            
+            <!-- 截止时间 -->
+            <div class="col-md-6">
+                <label class="form-label mb-1" data-lang="taskDueDate">截止时间</label>
+                <div class="d-flex gap-2">
+                    <!-- 年 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="due_year" name="due_year" placeholder="年" min="2020" max="2100" value="{{ task.due_date|date:'Y'|default:'' }}">
+                    </div>
+                    <!-- 月 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="due_month" name="due_month" placeholder="月" min="1" max="12" value="{{ task.due_date|date:'m'|default:'' }}">
+                    </div>
+                    <!-- 日 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="due_day" name="due_day" placeholder="日" min="1" max="31" value="{{ task.due_date|date:'d'|default:'' }}">
+                    </div>
+                    <!-- 时 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="due_hour" name="due_hour" placeholder="时" min="0" max="23" value="{{ task.due_date|date:'H'|default:'' }}">
+                    </div>
+                    <!-- 分 -->
+                    <div class="flex-grow-1">
+                        <input type="number" class="form-control" id="due_minute" name="due_minute" placeholder="分" min="0" max="59" value="{{ task.due_date|date:'i'|default:'' }}">
+                    </div>
+                    <input type="hidden" id="due_date" name="due_date">
+                </div>
+            </div>
+            
+            {% block extra_fields %}
+            {% endblock %}
+            
+            <!-- 优先级 -->
+            <div class="col-md-6">
+                <label for="priority" class="form-label mb-1" data-lang="taskPriority">优先级</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="low" {% if task.priority == 'low' %}selected{% endif %} data-lang="taskPriorityLow">低</option>
+                    <option value="medium" {% if task.priority == 'medium' or not task.priority %}selected{% endif %} data-lang="taskPriorityMedium">中</option>
+                    <option value="high" {% if task.priority == 'high' %}selected{% endif %} data-lang="taskPriorityHigh">高</option>
+                </select>
+            </div>
+            
+            <!-- 提醒周期 -->
+            <div class="col-md-6">
+                <label for="reminder_period" class="form-label mb-1" data-lang="taskReminderPeriod">提醒周期</label>
+                <select class="form-select" id="reminder_period" name="reminder_period">
+                    <option value="once" {% if task.reminder_period == 'once' or not task.reminder_period %}selected{% endif %} data-lang="taskReminderPeriodOnce">一次性</option>
+                    <option value="daily" {% if task.reminder_period == 'daily' %}selected{% endif %} data-lang="taskReminderPeriodDaily">每天</option>
+                    <option value="weekly" {% if task.reminder_period == 'weekly' %}selected{% endif %} data-lang="taskReminderPeriodWeekly">每周</option>
+                    <option value="monthly" {% if task.reminder_period == 'monthly' %}selected{% endif %} data-lang="taskReminderPeriodMonthly">每月</option>
+                    <option value="yearly" {% if task.reminder_period == 'yearly' %}selected{% endif %} data-lang="taskReminderPeriodYearly">每年</option>
+                    <option value="custom" {% if task.reminder_period == 'custom' %}selected{% endif %} data-lang="taskReminderPeriodCustom">自定义</option>
+                </select>
+            </div>
+            
+            <!-- 自定义提醒天数 -->
+            <div class="col-12" id="custom-reminder-days" style="display: none;">
+                <label class="form-label mb-1" data-lang="taskCustomReminderDays">自定义提醒天数</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="1" {% if '1' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdayMonday">周一</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="2" {% if '2' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdayTuesday">周二</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="3" {% if '3' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdayWednesday">周三</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="4" {% if '4' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdayThursday">周四</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="5" {% if '5' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdayFriday">周五</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="6" {% if '6' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdaySaturday">周六</span>
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" name="custom_reminder_days" value="7" {% if '7' in task.custom_reminder_days|default:'' %}checked{% endif %}>
+                        <span data-lang="taskWeekdaySunday">周日</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 标签 -->
+            <div class="col-12">
+                <label class="form-label mb-1" data-lang="taskTags">标签</label>
+                <div class="d-flex gap-4">
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="radio" class="form-check-input me-2" name="tags" value="学习" {% if task.tags == '学习' %}checked{% endif %}>
+                        学习
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="radio" class="form-check-input me-2" name="tags" value="工作" {% if task.tags == '工作' %}checked{% endif %}>
+                        工作
+                    </label>
+                    <label class="form-check-label d-flex align-items-center">
+                        <input type="radio" class="form-check-input me-2" name="tags" value="生活" {% if task.tags == '生活' %}checked{% endif %}>
+                        生活
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 按钮 -->
+            <div class="col-12 mt-2">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'task_list' %}" class="btn btn-outline-secondary" data-lang="taskCancel">取消</a>
+                    <button type="submit" class="btn btn-primary" data-lang="taskSubmit">保存</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    
+    <script src="{% static 'js/task_form.js' %}"></script>
+{% endblock %}

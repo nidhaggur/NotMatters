@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}用户管理 - 超级管理员面板{% endblock %}
+
+{% block content %}
+    <h2 class="mb-4">用户管理</h2>
+    
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">用户列表</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>是否超级管理员</th>
+                            <th>首次登录</th>
+                            <th>最后登录</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.is_staff %}
+                                        <span class="badge bg-success">是</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">否</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.date_joined|date:'Y-m-d H:i' }}</td>
+                                <td>{{ user.last_login|date:'Y-m-d H:i'|default:'从未登录' }}</td>
+                                <td>
+                                    {% if not user.is_staff or user == request.user %}
+                                        <a href="{% url 'admin_delete_user' user.id %}" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除这个用户吗？此操作不可恢复。');">
+                                            <i class="bi bi-trash me-1"></i>删除
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">无法删除</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">暂无用户</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">操作说明</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">点击"删除"按钮可以注销用户账号</li>
+                <li class="list-group-item">注销用户账号会删除该用户的所有任务数据</li>
+                <li class="list-group-item">超级管理员可以删除其他普通用户，但不能删除自己</li>
+                <li class="list-group-item">此操作不可恢复，请谨慎操作</li>
+            </ul>
+        </div>
+    </div>
+{% endblock %}

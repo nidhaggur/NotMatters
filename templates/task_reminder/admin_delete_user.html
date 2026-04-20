@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}删除用户 - 超级管理员面板{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center min-vh-80 align-items-start py-3">
+        <div class="col-md-6">
+            <div class="card shadow-lg rounded-3 overflow-hidden border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" class="mb-3" style="width: 64px; height: 64px; border-radius: 16px;">
+                        <h2 class="text-center mb-2">删除用户</h2>
+                        <p class="text-muted">确认要删除此用户账号吗？此操作不可恢复。</p>
+                    </div>
+                    
+                    {% if error %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ error }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
+                    
+                    {% if user %}
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            <div class="alert alert-warning mb-4">
+                                <h5 class="alert-heading">用户信息</h5>
+                                <ul class="mb-0">
+                                    <li>用户名：{{ user.username }}</li>
+                                    <li>邮箱：{{ user.email }}</li>
+                                    <li>是否超级管理员：{% if user.is_staff %}是{% else %}否{% endif %}</li>
+                                    <li>创建时间：{{ user.date_joined|date:'Y-m-d H:i' }}</li>
+                                    <li>最后登录：{{ user.last_login|date:'Y-m-d H:i'|default:'从未登录' }}</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-danger mb-4">
+                                <h5 class="alert-heading">重要提醒</h5>
+                                <ul class="mb-0">
+                                    <li>删除用户后，该用户的所有任务数据将被永久删除</li>
+                                    <li>用户的个人信息将被移除</li>
+                                    <li>此操作不可撤销</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-danger w-100 py-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-trash me-2"></i>确认删除
+                                </button>
+                                <a href="{% url 'admin_user_management' %}" class="btn btn-secondary w-100 py-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-arrow-left me-2"></i>取消
+                                </a>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>用户不存在或已被删除</p>
+                            <a href="{% url 'admin_user_management' %}" class="btn btn-primary mt-3">返回用户列表</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        border-color: #4099ff;
+        box-shadow: 0 0 0 0.2rem rgba(64, 153, 255, 0.25);
+    }
+    .btn-danger {
+        transition: all 0.3s ease;
+    }
+    .btn-danger:hover {
+        transform: translateY(-1px);
+    }
+    .btn-secondary {
+        transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+        transform: translateY(-1px);
+    }
+    .card {
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}

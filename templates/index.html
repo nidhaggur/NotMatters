@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}首页 - 事项提示器{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+    <!-- 今日事项横栏 -->
+    <div class="bg-primary text-white p-4 mb-4 rounded">
+        <h2 class="h4 mb-0" data-lang="todayTasks">今日事项</h2>
+        <p class="mb-0">{{ today|date:'Y年m月d日' }} ({{ today|date:'l' }})</p>
+        {% if today_tasks %}
+        <div class="mt-2">
+            <h3 class="h6 mb-2" data-lang="todayTaskTitle">今日任务</h3>
+            <ul class="list-unstyled">
+                {% for task in today_tasks %}
+                <li class="mb-1">
+                    <span class="badge {% if task.priority == 'low' %}bg-success{% elif task.priority == 'medium' %}bg-warning{% else %}bg-danger{% endif %} me-2">
+                        {% if task.priority == 'low' %}<span data-lang="taskPriorityLow">低</span>{% elif task.priority == 'medium' %}<span data-lang="taskPriorityMedium">中</span>{% else %}<span data-lang="taskPriorityHigh">高</span>{% endif %}
+                    </span>
+                    <a href="{% url 'task_detail' task.id %}" class="text-white text-decoration-none">
+                        {{ task.title }}
+                        <small class="text-light"> ({{ task.due_date|date:'H:i' }})</small>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <p class="mt-2 text-light" data-lang="noTasksToday">今天没有任务</p>
+        {% endif %}
+    </div>
+    
+    <!-- 过期事项 -->
+    {% if overdue_tasks %}
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h3 class="h5 mb-0" data-lang="overdueTasks">过期事项</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                {% for task in overdue_tasks %}
+                <div class="col-md-6">
+                    <a href="{% url 'task_detail' task.id %}" class="d-block p-3 border-bottom border-right border-dark border-opacity-10 text-decoration-none text-dark hover:bg-light h-100">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h4 class="h6 mb-1 text-truncate">{{ task.title }}</h4>
+                            <span class="badge {% if task.priority == 'low' %}bg-success{% elif task.priority == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {% if task.priority == 'low' %}<span data-lang="taskPriorityLow">低</span>{% elif task.priority == 'medium' %}<span data-lang="taskPriorityMedium">中</span>{% else %}<span data-lang="taskPriorityHigh">高</span>{% endif %}
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-calendar"></i> {{ task.due_date|date:'Y-m-d H:i' }}
+                        </p>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    <!-- 日历 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="h5 mb-0" data-lang="calendar">日历</h3>
+        </div>
+        <div class="card-body">
+            <div id="calendar" class="calendar" data-today="{{ today|date:'Y-m-d' }}" data-task-counts="{{ task_counts|default:'{}' }}"></div>
+        </div>
+    </div>
+    
+    {% if user.is_authenticated %}
+    <!-- 当天任务列表 -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h3 class="h5 mb-0" data-lang="todayTasksList">当天任务</h3>
+        </div>
+        <div class="card-body">
+            {% if today_tasks %}
+            {% for task in today_tasks %}
+            <div class="border-bottom pb-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4 class="h6 mb-0">{{ task.title }}</h4>
+                    <span class="badge {% if task.priority == 'low' %}bg-success{% elif task.priority == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                        {% if task.priority == 'low' %}<span data-lang="taskPriorityLow">低</span>{% elif task.priority == 'medium' %}<span data-lang="taskPriorityMedium">中</span>{% else %}<span data-lang="taskPriorityHigh">高</span>{% endif %}
+                    </span>
+                </div>
+                <p class="text-muted small mt-2">
+                    <i class="bi bi-clock"></i> {{ task.due_date|date:'H:i' }}
+                    {% if task.status %}
+                    <span class="mx-2">|</span>
+                    <i class="bi bi-check-circle"></i> 
+                    {% if task.status == 'pending' %}<span data-lang="pending">待办</span>{% elif task.status == 'in_progress' %}<span data-lang="inProgress">进行中</span>{% else %}<span data-lang="completed">已完成</span>{% endif %}
+                    {% endif %}
+                </p>
+                {% if task.description %}
+                <p class="text-sm mt-2">{{ task.description }}</p>
+                {% endif %}
+                {% if task.tags %}
+                <div class="mt-2">
+                    <span class="text-muted small"><i class="bi bi-tags"></i> <span data-lang="tags">标签</span>: </span>
+                    <span class="text-sm">{{ task.tags }}</span>
+                </div>
+                {% endif %}
+                {% if task.reminder_time %}
+                <div class="mt-2">
+                    <span class="text-muted small"><i class="bi bi-bell"></i> <span data-lang="reminderTime">提醒时间</span>: </span>
+                    <span class="text-sm">{{ task.reminder_time|date:'Y-m-d H:i' }}</span>
+                </div>
+                {% endif %}
+                <div class="mt-3">
+                    <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary me-2" data-lang="viewDetails">查看详情</a>
+                    <a href="{% url 'edit_task' task.id %}" class="btn btn-sm btn-outline-secondary" data-lang="taskEdit">编辑</a>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-center text-muted" data-lang="noTasksToday">今天没有任务</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- 未登录提示 -->
+    <div class="jumbotron">
+        <h1 class="display-4" data-lang="indexWelcome">欢迎使用事项提示器</h1>
+        <p class="lead" data-lang="indexDescription">高效管理日常任务与提醒事项，提升时间管理与工作效率。</p>
+        <hr class="my-4">
+        <p data-lang="indexFeatureDesc">通过图形化界面实现任务的添加、删除、修改与提醒功能，具备良好的用户体验与实用性。</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button" data-lang="loginToUse">登录使用</a>
+    </div>
+    {% endif %}
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <script src="{% static 'js/index.js' %}"></script>
+{% endblock %}

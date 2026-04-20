@@ -1,0 +1,52 @@
+/* 基础样式 */
+body {
+    min-height: 100vh;
+    transition: background 0.5s ease;
+}
+
+/* 浅色模式 */
+body.light-mode {
+    color: #212529;
+    background: linear-gradient(135deg, #f0f4f8 0%, #bed1e7ff 50%, #8fb0d1ff 100%);
+}
+
+/* 深色模式 */
+body.dark-mode {
+    color: #ecf0f1;
+    background: linear-gradient(135deg, #0f0f23 0%, #1e1e41ff 50%, #20387aff 100%);
+}
+
+/* 深色模式下的其他元素样式 */
+body.dark-mode .navbar-light {
+    background-color: #343a40;
+}
+
+body.dark-mode .navbar-light .navbar-brand,
+body.dark-mode .navbar-light .nav-link {
+    color: #ecf0f1;
+}
+
+body.dark-mode .card {
+    background-color: #495057;
+    color: #ecf0f1;
+}
+
+body.dark-mode .footer {
+    background-color: #343a40;
+    color: #ecf0f1;
+}
+
+body.dark-mode .form-control {
+    background-color: #495057;
+    color: #ecf0f1;
+    border-color: #6c757d;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #adb5bd;
+}
+
+/* 确保容器背景透明，显示body的渐变背景 */
+.container {
+    background-color: transparent;
+}

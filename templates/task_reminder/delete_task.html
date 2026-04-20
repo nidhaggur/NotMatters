@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}删除任务 - 事项提示器{% endblock %}
+
+{% block content %}
+    <h2 class="mb-4" data-lang="taskDelete">删除任务</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">任务信息</h5>
+            <p class="card-text"><strong data-lang="taskTitle">标题:</strong> {{ task.title }}</p>
+            <p class="card-text"><strong data-lang="taskDescription">描述:</strong> {{ task.description|default:'无' }}</p>
+            <p class="card-text"><strong data-lang="taskPriority">优先级:</strong> 
+                {% if task.priority == 'low' %}<span data-lang="taskPriorityLow">低</span>
+                {% elif task.priority == 'medium' %}<span data-lang="taskPriorityMedium">中</span>
+                {% else %}<span data-lang="taskPriorityHigh">高</span>
+                {% endif %}
+            </p>
+            <p class="card-text"><strong>创建时间:</strong> {{ task.created_at|date:'Y-m-d H:i' }}</p>
+            <p class="card-text"><strong data-lang="taskDueDate">截止时间:</strong> {{ task.due_date|date:'Y-m-d H:i'|default:'无' }}</p>
+            <p class="card-text"><strong data-lang="taskStatus">状态:</strong> 
+                {% if task.status == 'pending' %}<span data-lang="taskStatusPending">待办</span>
+                {% elif task.status == 'in_progress' %}进行中
+                {% else %}<span data-lang="taskStatusCompleted">已完成</span>
+                {% endif %}
+            </p>
+            <p class="card-text"><strong data-lang="taskReminder">提醒时间:</strong> {{ task.reminder_time|date:'Y-m-d H:i'|default:'无' }}</p>
+        </div>
+    </div>
+    
+    <p class="text-danger mb-4" data-lang="taskConfirmDelete">确定要删除此任务吗？此操作不可恢复。</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'task_list' %}" class="btn btn-outline-secondary">取消</a>
+            <button type="submit" class="btn btn-danger" data-lang="taskDelete">删除</button>
+        </div>
+    </form>
+{% endblock %}

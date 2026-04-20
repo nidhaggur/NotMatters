@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}任务列表 - 事项提示器{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between mb-4">
+        <h2 data-lang="taskListTitle">任务列表</h2>
+        <div class="d-flex gap-2">
+            <div id="batchActions" class="d-none">
+                <div class="d-flex align-items-center me-2">
+                    <input type="checkbox" id="selectAll" class="me-2">
+                    <label for="selectAll" data-lang="selectAll">全选</label>
+                </div>
+                <button id="batchDelete" class="btn btn-danger me-2" data-lang="batchDelete">批量删除</button>
+                <button id="batchComplete" class="btn btn-success me-2" data-lang="batchComplete">批量标记完成</button>
+                <button id="cancelBatch" class="btn btn-outline-secondary" data-lang="cancelBatch">取消</button>
+            </div>
+            <button id="batchButton" class="btn btn-outline-primary" data-lang="batchButton">批量操作</button>
+            <a href="{% url 'add_task' %}" class="btn btn-primary" data-lang="taskAdd">添加任务</a>
+        </div>
+    </div>
+    
+    <div class="card mb-2">
+        <div class="card-body">
+            <form method="get" action="{% url 'task_list' %}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="search" data-lang="taskSearch">关键词搜索</label>
+                            <input type="text" class="form-control" id="search" name="search" data-lang="taskSearchPlaceholder" value="{{ search_query }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-3">
+                            <label for="priority" data-lang="taskPriority">优先级</label>
+                            <select class="form-control" id="priority" name="priority">
+                                <option value="" data-lang="taskListAll">全部</option>
+                                <option value="low" {% if priority_filter == 'low' %}selected{% endif %} data-lang="taskPriorityLow">低</option>
+                                <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %} data-lang="taskPriorityMedium">中</option>
+                                <option value="high" {% if priority_filter == 'high' %}selected{% endif %} data-lang="taskPriorityHigh">高</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-3">
+                            <label for="tags" data-lang="tags">标签</label>
+                            <select class="form-control" id="tags" name="tags">
+                                <option value="">全部</option>
+                                <option value="学习" {% if tags_filter == '学习' %}selected{% endif %}>学习</option>
+                                <option value="工作" {% if tags_filter == '工作' %}selected{% endif %}>工作</option>
+                                <option value="生活" {% if tags_filter == '生活' %}selected{% endif %}>生活</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-3">
+                            <label for="date" data-lang="taskDate">日期</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ date_filter }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100" data-lang="taskSearch">搜索</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-gap-4">
+        {% for task in tasks %}
+        <div class="col">
+            <div class="h-100">
+                <div class="card h-100 d-flex flex-column task-card" data-task-id="{{ task.id }}" style="cursor: pointer;">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="task-checkbox me-2" value="{{ task.id }}" onclick="event.stopPropagation();">
+                                <h5 class="card-title mb-0">{{ task.title }}</h5>
+                            </div>
+                            <span class="badge {% if task.priority == 'low' %}bg-success{% elif task.priority == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {% if task.priority == 'low' %}低{% elif task.priority == 'medium' %}中{% else %}高{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body flex-grow-1">
+                        <p class="card-text" id="desc-{{ task.id }}" data-full-text="{{ task.description|default:''|escapejs }}">
+                            {% if task.description and task.description|length > 100 %}
+                                {{ task.description|slice:':100' }}...
+                            {% else %}
+                                {{ task.description|default:'无描述' }}
+                            {% endif %}
+                        </p>
+                        <div class="mt-3">
+                            <p class="text-muted small">
+                                <i class="bi bi-calendar"></i> <span data-lang="createdAt">创建时间</span>: <span class="datetime-display" data-datetime="{{ task.created_at.isoformat }}"></span>
+                            </p>
+                            <p class="text-muted small">
+                                <i class="bi bi-clock"></i> <span data-lang="dueDate">截止时间</span>: 
+                                {% if task.due_date %}
+                                    <span class="datetime-display" data-datetime="{{ task.due_date.isoformat }}"></span>
+                                {% else %}
+                                    <span data-lang="no">无</span>
+                                {% endif %}
+                            </p>
+                            <p class="text-muted small">
+                                <i class="bi bi-bell"></i> <span data-lang="reminderTime">提醒时间</span>: 
+                                {% if task.reminder_time %}
+                                    <span class="datetime-display" data-datetime="{{ task.reminder_time.isoformat }}"></span>
+                                {% else %}
+                                    <span data-lang="no">无</span>
+                                {% endif %}
+                            </p>
+                            {% if task.tags %}
+                            <p class="text-muted small">
+                                <i class="bi bi-tags"></i> <span data-lang="tags">标签</span>: {{ task.tags }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <span class="badge {% if task.status == 'pending' %}bg-warning{% elif task.status == 'in_progress' %}bg-info{% else %}bg-success{% endif %}">
+                                {% if task.status == 'pending' %}<span data-lang="pending">未完成</span>{% elif task.status == 'in_progress' %}<span data-lang="inProgress">进行中</span>{% else %}<span data-lang="completed">已完成</span>{% endif %}
+                            </span>
+                            {% if task.tags %}
+                            <span class="badge bg-secondary">
+                                {{ task.tags }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'edit_task' task.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();" data-lang="taskEdit">编辑</a>
+                            <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();" data-lang="taskDelete">删除</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <script src="{% static 'js/task_list.js' %}"></script>
+    <script>
+        // 处理任务卡片点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskCards = document.querySelectorAll('.task-card');
+            taskCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 避免点击复选框和按钮时触发跳转
+                    if (!e.target.closest('input[type="checkbox"]') && !e.target.closest('button') && !e.target.closest('a')) {
+                        const taskId = this.getAttribute('data-task-id');
+                        window.location.href = `{% url 'task_detail' 0 %}`.replace('0', taskId);
+                    }
+                });
+            });
+        });
+    </script>
+    
+    {% if not tasks %}
+    <div class="text-center py-5">
+        <h3 data-lang="taskListNoTasks">暂无任务</h3>
+        <p data-lang="taskListCreateFirst">点击上方"添加任务"按钮创建第一个任务</p>
+    </div>
+    {% endif %}
+{% endblock %}

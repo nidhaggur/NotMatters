@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}设置 - 事项提示器{% endblock %}
+
+{% block content %}
+    <h2 class="mb-4" data-lang="settingsTitle">设置</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header" data-lang="personalizationTitle">
+            个性化设置
+        </div>
+        <div class="card-body">
+            <div class="form-group mb-3">
+                <label for="theme" data-lang="themeLabel">主题</label>
+                <select class="form-control" id="theme">
+                    <option value="light" data-lang="themeLight">浅色</option>
+                    <option value="dark" data-lang="themeDark">深色</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label for="language" data-lang="languageLabel">语言</label>
+                <select class="form-control" id="language">
+                    <option value="zh-CN" data-lang="languageChinese">简体中文</option>
+                    <option value="en-US" data-lang="languageEnglish">English</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header" data-lang="volumeTitle">
+            音量设置
+        </div>
+        <div class="card-body">
+            <div class="form-group mb-3">
+                <label for="volume" data-lang="volumeLabel">提醒音量</label>
+                <input type="range" class="form-range" id="volume" min="0" max="100" value="50">
+                <small id="volumeValue" class="form-text text-muted">50%</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header" data-lang="ringDurationTitle">
+            响铃时长
+        </div>
+        <div class="card-body">
+            <div class="form-group mb-3">
+                <label for="ringDuration" data-lang="ringDurationLabel">响铃时长（秒）</label>
+                <input type="number" class="form-control" id="ringDuration" value="30" min="5" max="120">
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header" data-lang="datetimeTitle">
+            日期和时间
+        </div>
+        <div class="card-body">
+            <div class="form-group mb-3">
+                <label for="timezone" data-lang="timezoneLabel">时区</label>
+                <select class="form-control" id="timezone">
+                    <option value="Asia/Shanghai" data-lang="timezoneShanghai">中国标准时间 (UTC+8)</option>
+                    <option value="America/New_York" data-lang="timezoneNewYork">美国东部时间 (UTC-5)</option>
+                    <option value="Europe/London" data-lang="timezoneLondon">英国标准时间 (UTC+0)</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label for="dateFormat" data-lang="dateFormatLabel">日期格式</label>
+                <select class="form-control" id="dateFormat">
+                    <option value="YYYY-MM-DD" data-lang="dateFormatYMD">YYYY-MM-DD</option>
+                    <option value="DD/MM/YYYY" data-lang="dateFormatDMY">DD/MM/YYYY</option>
+                    <option value="MM/DD/YYYY" data-lang="dateFormatMDY">MM/DD/YYYY</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label for="timeFormat" data-lang="timeFormatLabel">时间格式</label>
+                <select class="form-control" id="timeFormat">
+                    <option value="24" data-lang="timeFormat24">24小时制</option>
+                    <option value="12" data-lang="timeFormat12">12小时制</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header" data-lang="reminderSoundTitle">
+            提醒音效
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="reminderSound" data-lang="reminderSoundLabel">上传提醒音效</label>
+                    <input type="file" class="form-control-file" id="reminderSound" name="reminder_sound" accept="audio/*">
+                    <small class="form-text text-muted" data-lang="reminderSoundHint">支持MP3、WAV等音频格式，文件大小不超过5MB</small>
+                </div>
+                <button type="submit" class="btn btn-primary" data-lang="saveButton">保存设置</button>
+            </form>
+            
+            <div class="mt-4">
+                <h6 data-lang="currentSoundTitle">当前音效</h6>
+                <div class="mt-2">
+                    <audio controls class="w-100">
+                        {% if user.userprofile.reminder_sound %}
+                            <source src="{{ user.userprofile.reminder_sound.url }}" type="audio/mpeg">
+                        {% else %}
+                            <source src="{% static 'videos/任务提醒音.mp3' %}" type="audio/mpeg">
+                        {% endif %}
+                        您的浏览器不支持音频播放
+                    </audio>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

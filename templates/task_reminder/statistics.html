@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}数据统计 - 事项提示器{% endblock %}
+
+{% block content %}
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0" data-lang="statisticsTitle">
+            <i class="bi bi-graph-up-arrow me-2 text-primary"></i>数据统计
+        </h2>
+        <span class="badge bg-primary fs-6">{{ total_tasks }} 个任务</span>
+    </div>
+    
+    <!-- 数据概览卡片 - 使用Bootstrap 5的卡片组件和图标 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-list-task fs-2 text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-subtitle mb-1 text-muted" data-lang="totalTasks">总任务数</h6>
+                        <h3 class="card-title mb-0 fw-bold">{{ total_tasks }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-check-circle fs-2 text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-subtitle mb-1 text-muted" data-lang="completedTasks">已完成</h6>
+                        <h3 class="card-title mb-0 fw-bold text-success">{{ completed_tasks }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-subtitle mb-1 text-muted" data-lang="pendingTasks">待处理</h6>
+                        <h3 class="card-title mb-0 fw-bold text-warning">{{ pending_tasks }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-percent fs-2 text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-subtitle mb-1 text-muted" data-lang="completionRate">完成率</h6>
+                        <h3 class="card-title mb-0 fw-bold text-info">{{ completion_rate }}%</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 进度条展示完成率 -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold" data-lang="completionRate">完成率</span>
+                <span class="badge bg-primary">{{ completion_rate }}%</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                     role="progressbar" 
+                     style="width: {{ completion_rate }}%" 
+                     aria-valuenow="{{ completion_rate }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 图表区域 -->
+    <div class="row g-4">
+        <!-- 任务状态分布饼图 -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2 text-primary"></i>
+                        <span data-lang="statusDistribution">任务状态分布</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 优先级分布柱状图 -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart me-2 text-danger"></i>
+                        <span data-lang="priorityDistribution">任务优先级分布</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 任务创建时间趋势折线图 -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2 text-success"></i>
+                        <span data-lang="taskTrend">任务创建趋势（最近30天）</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-2">
+        <!-- 标签分布图 -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-tags me-2 text-warning"></i>
+                        <span data-lang="tagDistribution">标签分布</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="tagChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 每日任务完成数 -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar-check me-2 text-info"></i>
+                        <span data-lang="dailyCompletion">每日任务完成数（最近7天）</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 数据导出区域 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-download me-2 text-secondary"></i>
+                        <span data-lang="dataExport">数据导出</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4" data-lang="exportDescription">将任务数据导出为不同格式，便于进一步分析和备份。</p>
+                    
+                    <!-- 导出选项 -->
+                    <div class="mb-4">
+                        <h6 class="mb-2 text-secondary">导出范围</h6>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="exportScope" id="exportAll" checked>
+                                <label class="form-check-label" for="exportAll">
+                                    全部任务
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="exportScope" id="exportCompleted">
+                                <label class="form-check-label" for="exportCompleted">
+                                    已完成任务
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="exportScope" id="exportPending">
+                                <label class="form-check-label" for="exportPending">
+                                    待处理任务
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 导出格式选择 -->
+                    <h6 class="mb-3 text-secondary">导出格式</h6>
+                    <div class="row gap-4">
+                        <div class="col-md-4">
+                            <a href="{% url 'export_data' %}?format=csv" class="card border-2 border-primary rounded-lg p-4 text-center h-100 hover:shadow-lg transition-shadow duration-300">
+                                <div class="mb-3 text-primary">
+                                    <i class="bi bi-filetype-csv fs-3"></i>
+                                </div>
+                                <h6 class="text-primary font-semibold">CSV格式</h6>
+                                <p class="text-sm text-muted">适合Excel、Google Sheets等电子表格软件</p>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <a href="{% url 'export_data' %}?format=json" class="card border-2 border-secondary rounded-lg p-4 text-center h-100 hover:shadow-lg transition-shadow duration-300">
+                                <div class="mb-3 text-secondary">
+                                    <i class="bi bi-filetype-json fs-3"></i>
+                                </div>
+                                <h6 class="text-secondary font-semibold">JSON格式</h6>
+                                <p class="text-sm text-muted">适合程序处理和数据交换</p>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <a href="{% url 'export_data' %}?format=excel" class="card border-2 border-success rounded-lg p-4 text-center h-100 hover:shadow-lg transition-shadow duration-300">
+                                <div class="mb-3 text-success">
+                                    <i class="bi bi-filetype-xlsx fs-3"></i>
+                                </div>
+                                <h6 class="text-success font-semibold">Excel格式</h6>
+                                <p class="text-sm text-muted">包含格式和样式，适合详细分析</p>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- 导出提示 -->
+                    <div class="mt-4 p-3 bg-info bg-opacity-10 rounded-lg">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-info-circle text-info fs-5"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="text-info font-semibold">导出提示</h6>
+                                <p class="text-sm text-muted mb-0">
+                                    导出文件将包含任务的完整信息，包括标题、描述、优先级、状态、截止时间等。
+                                    文件会自动下载到您的设备中。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据变量定义 -->
+    <script>
+        const status_data = {{ status_data|safe }};
+        const priority_data = {{ priority_data|safe }};
+        const trend_data = {{ trend_data|safe }};
+        const tag_data = {{ tag_data|safe }};
+        const daily_data = {{ daily_data|safe }};
+    </script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 导出功能脚本 -->
+    <script>
+        // 处理导出范围选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const exportLinks = document.querySelectorAll('.card[href*="export_data"]');
+            const exportScopeRadios = document.querySelectorAll('input[name="exportScope"]');
+            
+            // 获取当前选中的导出范围
+            function getSelectedScope() {
+                for (const radio of exportScopeRadios) {
+                    if (radio.checked) {
+                        return radio.id;
+                    }
+                }
+                return 'exportAll';
+            }
+            
+            // 为导出链接添加点击事件
+            for (const link of exportLinks) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const scope = getSelectedScope();
+                    let statusFilter = '';
+                    
+                    // 根据选择的范围设置状态过滤器
+                    if (scope === 'exportCompleted') {
+                        statusFilter = '&status=completed';
+                    } else if (scope === 'exportPending') {
+                        statusFilter = '&status=pending';
+                    }
+                    
+                    // 重定向到导出URL，带上状态过滤参数
+                    window.location.href = this.href + statusFilter;
+                });
+            }
+        });
+    </script>
+    
+    <!-- 统计页面脚本 -->
+    <script src="{% static 'js/statistics.js' %}"></script>
+{% endblock %}

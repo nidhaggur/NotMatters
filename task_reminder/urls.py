@@ -1,0 +1,30 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register, name='register'),
+    path('logout/', views.logout_view, name='logout'),
+    path('switch_account/', views.switch_account, name='switch_account'),
+    path('update-avatar/', views.update_avatar, name='update_avatar'),
+    path('set/', views.settings_view, name='set'),
+    path('tasks/', views.task_list, name='task_list'),
+    path('task_list/', views.task_list, name='task_list'),
+    path('tasks/detail/<int:task_id>/', views.task_detail, name='task_detail'),
+    path('tasks/add/', views.add_task, name='add_task'),
+    path('tasks/edit/<int:task_id>/', views.edit_task, name='edit_task'),
+    path('tasks/delete/<int:task_id>/', views.delete_task, name='delete_task'),
+    path('tasks/check-reminders/', views.check_reminders, name='check_reminders'),
+    path('tasks/update-status/', views.update_task_status, name='update_task_status'),
+    path('sessions/', views.get_user_sessions, name='get_user_sessions'),
+    path('sessions/terminate/<int:session_id>/', views.terminate_session, name='terminate_session'),
+    path('tasks/get-tasks-by-date/', views.get_tasks_by_date, name='get_tasks_by_date'),
+    path('superadmin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('superadmin/statistics/', views.admin_statistics_view, name='admin_statistics'),
+    path('superadmin/users/', views.admin_user_management, name='admin_user_management'),
+    path('superadmin/users/delete/<int:user_id>/', views.admin_delete_user, name='admin_delete_user'),
+    path('delete-account/', views.delete_account, name='delete_account'),
+    path('statistics/', views.statistics_view, name='statistics'),
+    path('export/', views.export_data, name='export_data'),
+]
