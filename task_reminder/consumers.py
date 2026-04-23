@@ -117,7 +117,12 @@ class ReminderConsumer(AsyncWebsocketConsumer):
             # 处理进度节点
             progress_nodes = []
             if task.progress_nodes:
-                progress_nodes = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+                # 如果是字符串，按换行符分割
+                if isinstance(task.progress_nodes, str):
+                    progress_nodes = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+                # 如果是列表，直接使用
+                elif isinstance(task.progress_nodes, list):
+                    progress_nodes = task.progress_nodes
             else:
                 progress_nodes = ['待办', '进行中', '已完成']
             

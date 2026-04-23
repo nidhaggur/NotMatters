@@ -53,9 +53,15 @@ class LoginForm(forms.Form):
     )
 
 class TaskForm(forms.ModelForm):
+    # 为 progress_nodes 添加自定义字段，使用 CharField 而不是 JSONField
+    progress_nodes = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'placeholder': '进度节点，每行一个', 'rows': 4}),
+        required=False
+    )
+    
     class Meta:
         model = Task
-        fields = ['title', 'description', 'priority', 'due_date', 'reminder_time', 'reminder_period', 'custom_reminder_days', 'tags']
+        fields = ['title', 'description', 'priority', 'due_date', 'reminder_time', 'reminder_period', 'custom_reminder_days', 'tags', 'progress_nodes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '任务标题'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': '任务描述', 'rows': 3}),
@@ -80,6 +86,31 @@ class TaskForm(forms.ModelForm):
             tags_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
             return ','.join(tags_list)
         return tags
+    
+    def clean_progress_nodes(self):
+        progress_nodes = self.cleaned_data.get('progress_nodes')
+        if progress_nodes:
+            # 清理进度节点，去除空行和空格，转换为列表
+            nodes_list = [node.strip() for node in progress_nodes.split('\n') if node.strip()]
+            return nodes_list
+        return []
+    
+    def save(self, commit=True):
+        # 调用父类的 save 方法
+        task = super().save(commit=False)
+        
+        # 确保 progress_nodes 是列表格式
+        if isinstance(task.progress_nodes, str):
+            # 如果是字符串，转换为列表
+            nodes_list = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+            task.progress_nodes = nodes_list
+        elif not isinstance(task.progress_nodes, list):
+            # 如果不是列表，设置为空列表
+            task.progress_nodes = []
+        
+        if commit:
+            task.save()
+        return task
     
     def clean(self):
         cleaned_data = super().clean()

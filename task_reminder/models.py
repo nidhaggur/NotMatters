@@ -72,7 +72,9 @@ class Task(models.Model):
     custom_reminder_days = models.CharField(max_length=50, blank=True, null=True, verbose_name='自定义提醒天数')
     is_reminded = models.BooleanField(default=False, verbose_name='是否已提醒')
     tags = models.CharField(max_length=200, blank=True, null=True, verbose_name='标签')
-    progress_nodes = models.TextField(blank=True, null=True, verbose_name='进度节点')
+    progress_nodes = models.JSONField(blank=True, null=False, default=list, verbose_name='进度节点')
+    progress_status = models.JSONField(blank=True, null=False, default=list, verbose_name='进度节点状态')
+    progress_percentage = models.IntegerField(default=0, verbose_name='进度百分比')
     
     def __str__(self):
         return self.title

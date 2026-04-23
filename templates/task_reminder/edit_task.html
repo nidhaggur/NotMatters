@@ -1,4 +1,5 @@
 {% extends 'task_reminder/base_task_form.html' %}
+{% load custom_filters %}
 
 {% block extra_fields %}
     <div class="form-group mb-3">
@@ -15,7 +16,8 @@
         <label data-lang="taskProgress">进度</label>
         <div class="d-flex justify-content-between mb-3" id="progress-container" style="position: relative;" tabindex="-1">
             <!-- 进度节点将通过JavaScript动态生成 -->
-            <input type="hidden" id="progress_nodes" name="progress_nodes" value="{% if task.progress_nodes %}{{ task.progress_nodes }}{% else %}待办
+            <input type="hidden" id="progress_nodes" name="progress_nodes" value="{% if task.progress_nodes %}{% if task.progress_nodes|is_list %}{% for node in task.progress_nodes %}{{ node }}
+{% endfor %}{% else %}{{ task.progress_nodes }}{% endif %}{% else %}待办
 进行中
 已完成{% endif %}">
         </div>
@@ -143,10 +145,56 @@
                 progressContainer.appendChild(hiddenInput);
                 
                 // 获取节点列表
-                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                let nodes = [];
+                const value = progressNodesInput.value.trim();
+                
+                // 尝试解析字符串表示的列表
+                if (value.startsWith('[') && value.endsWith(']')) {
+                    try {
+                        // 替换 HTML 实体，然后解析 JSON
+                        let cleanedValue = value.replace(/&quot;/g, '"');
+                        // 处理 Python 列表格式（单引号）
+                        cleanedValue = cleanedValue.replace(/'/g, '"');
+                        // 处理 Python 格式的字符串（如 \n）
+                        cleanedValue = cleanedValue.replace(/\\n/g, ' ');
+                        const parsed = JSON.parse(cleanedValue);
+                        if (Array.isArray(parsed)) {
+                            // 如果是嵌套列表，提取内部列表
+                            if (parsed.length === 1 && Array.isArray(parsed[0])) {
+                                nodes = parsed[0];
+                            } else {
+                                nodes = parsed;
+                            }
+                        }
+                    } catch (e) {
+                        // 解析失败，尝试按逗号分割
+                        try {
+                            // 移除首尾的方括号
+                            const innerValue = value.substring(1, value.length - 1);
+                            // 按逗号分割并去除引号和空格
+                            nodes = innerValue.split(',').map(node => node.replace(/['"\s]/g, '').trim()).filter(node => node);
+                        } catch (e2) {
+                            // 再次失败，按原来的方式处理
+                            nodes = value.split('\n').filter(node => node.trim());
+                        }
+                    }
+                } else {
+                    // 不是列表字符串，按原来的方式处理
+                    nodes = value.split('\n').filter(node => node.trim());
+                }
                 
                 // 创建进度节点
                 nodes.forEach((node, index) => {
+                    // 确保 node 是字符串
+                    let nodeText = node;
+                    if (Array.isArray(node)) {
+                        // 如果是列表，将其转换为字符串
+                        nodeText = node.join(', ');
+                    } else if (typeof node === 'object' && node !== null) {
+                        // 如果是对象，将其转换为字符串
+                        nodeText = JSON.stringify(node);
+                    }
+                    
                     const nodeElement = document.createElement('div');
                     nodeElement.className = 'text-center progress-node';
                     nodeElement.dataset.index = index;
@@ -162,7 +210,7 @@
                             </div>
                         </div>
                         <div class="mt-2">
-                            <span>${node}</span>
+                            <span>${nodeText}</span>
                         </div>
                     `;
                     
@@ -175,6 +223,33 @@
             
             // 设置模态框焦点管理
             setupModalFocusManagement();
+            
+            // 表单提交前的处理
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // 确保进度节点数据正确
+                    const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                    if (nodes.length > 0) {
+                        // 为新的进度节点创建默认状态
+                        const statusArray = [];
+                        for (let i = 0; i < nodes.length; i++) {
+                            statusArray.push('pending');
+                        }
+                        
+                        // 创建或更新隐藏输入，用于存储进度节点状态
+                        let statusInput = document.getElementById('progress_status');
+                        if (!statusInput) {
+                            statusInput = document.createElement('input');
+                            statusInput.type = 'hidden';
+                            statusInput.id = 'progress_status';
+                            statusInput.name = 'progress_status';
+                            form.appendChild(statusInput);
+                        }
+                        statusInput.value = JSON.stringify(statusArray);
+                    }
+                });
+            }
             
             // 点击事件处理
             progressContainer.addEventListener('click', function(e) {

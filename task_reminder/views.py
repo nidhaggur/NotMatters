@@ -265,16 +265,76 @@ def task_list(request):
 def add_task(request):
     from .forms import TaskForm
     if request.method == 'POST':
+        # 调试：打印表单数据
+        print('POST data:', request.POST)
+        print('progress_nodes in POST:', 'progress_nodes' in request.POST)
+        print('progress_nodes value:', request.POST.get('progress_nodes'))
+        
+        # 使用 TaskForm 表单处理数据
         form = TaskForm(request.POST)
+        print('Form is valid:', form.is_valid())
         if form.is_valid():
+            print('Cleaned data:', form.cleaned_data)
+            print('Cleaned progress_nodes:', form.cleaned_data.get('progress_nodes'))
+            
+            # 保存表单数据
             task = form.save(commit=False)
             task.user = request.user
-            task.save()
-            if request.user.is_staff:
-                return redirect('admin_dashboard')
+            
+            # 确保 progress_nodes 是列表格式
+            if isinstance(task.progress_nodes, str):
+                # 如果是字符串，尝试解析为 JSON
+                try:
+                    import json
+                    # 处理 Python 列表格式（单引号）
+                    cleaned_string = task.progress_nodes.replace("'", '"')
+                    nodes_list = json.loads(cleaned_string)
+                    if not isinstance(nodes_list, list):
+                        # 如果解析后不是列表，按换行分割
+                        nodes_list = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+                except (json.JSONDecodeError, ValueError):
+                    # 解析失败，按换行分割
+                    nodes_list = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+                task.progress_nodes = nodes_list
+            elif not isinstance(task.progress_nodes, list):
+                # 如果不是列表，设置为空列表
+                task.progress_nodes = []
+            
+            # 初始化进度节点状态
+            task.progress_status = []
+            for node in task.progress_nodes:
+                task.progress_status.append('pending')
+            
+            # 计算初始进度百分比
+            if task.progress_nodes:
+                task.progress_percentage = 0  # 初始状态为0%
             else:
-                return redirect('task_list')
+                task.progress_percentage = 0
+            
+            # 智能状态更新
+            if not task.progress_nodes:
+                task.status = 'pending'
+            else:
+                task.status = 'pending'
+            
+            print('Task progress_nodes before save:', task.progress_nodes)
+            print('Task progress_status before save:', task.progress_status)
+            print('Task progress_percentage before save:', task.progress_percentage)
+            
+            # 保存任务
+            try:
+                task.save()
+                print('Task saved successfully')
+                if request.user.is_staff:
+                    return redirect('admin_dashboard')
+                else:
+                    return redirect('task_list')
+            except Exception as e:
+                print('Error saving task:', e)
+                # 如果保存失败，返回错误信息
+                return render(request, 'task_reminder/add_task.html', {'error': str(e), 'form': form})
         else:
+            print('Form errors:', form.errors)
             return render(request, 'task_reminder/add_task.html', {'form': form})
     else:
         form = TaskForm()
@@ -294,7 +354,46 @@ def edit_task(request, task_id):
             # 保存其他字段
             task = form.save(commit=False)
             task.status = request.POST.get('status', task.status)
-            task.progress_nodes = request.POST.get('progress_nodes', task.progress_nodes)
+            # 确保 progress_nodes 不为 None
+            if task.progress_nodes is None:
+                task.progress_nodes = []
+            
+            # 处理进度节点状态
+            progress_status_str = request.POST.get('progress_status')
+            if progress_status_str:
+                try:
+                    import json
+                    task.progress_status = json.loads(progress_status_str)
+                except json.JSONDecodeError:
+                    # 如果解析失败，重新初始化
+                    task.progress_status = []
+                    for node in task.progress_nodes:
+                        task.progress_status.append('pending')
+            else:
+                # 确保进度节点状态与进度节点数量一致
+                if not task.progress_status or len(task.progress_status) != len(task.progress_nodes):
+                    # 重新初始化进度节点状态
+                    task.progress_status = []
+                    for node in task.progress_nodes:
+                        task.progress_status.append('pending')
+            
+            # 计算进度百分比
+            if task.progress_nodes:
+                completed_count = task.progress_status.count('completed')
+                task.progress_percentage = int((completed_count / len(task.progress_nodes)) * 100)
+            else:
+                task.progress_percentage = 0
+            
+            # 智能状态更新
+            if not task.progress_nodes:
+                task.status = 'pending'
+            elif task.progress_percentage == 100:
+                task.status = 'completed'
+            elif task.progress_percentage > 0:
+                task.status = 'in_progress'
+            else:
+                task.status = 'pending'
+            
             task.save()
             if request.user.is_staff:
                 return redirect('admin_dashboard')
@@ -714,16 +813,61 @@ def task_detail(request, task_id):
     # 处理进度节点
     progress_nodes = []
     if task.progress_nodes:
-        progress_nodes = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+        if isinstance(task.progress_nodes, str):
+            # 如果是字符串，按原来的方式处理
+            progress_nodes = [node.strip() for node in task.progress_nodes.split('\n') if node.strip()]
+        elif isinstance(task.progress_nodes, list):
+            # 如果是列表，检查是否是嵌套列表
+            if task.progress_nodes and isinstance(task.progress_nodes[0], list):
+                # 如果是嵌套列表，提取内部列表
+                progress_nodes = task.progress_nodes[0]
+            else:
+                # 否则直接使用
+                progress_nodes = task.progress_nodes
     else:
         # 默认进度节点
         progress_nodes = ['待办', '进行中', '已完成']
+    
+    # 处理进度节点状态
+    progress_status = []
+    if task.progress_status:
+        if isinstance(task.progress_status, list):
+            # 确保进度节点状态与进度节点数量一致
+            if len(task.progress_status) != len(progress_nodes):
+                # 重新初始化进度节点状态
+                progress_status = []
+                for node in progress_nodes:
+                    progress_status.append('pending')
+            else:
+                progress_status = task.progress_status
+        else:
+            # 如果不是列表，重新初始化
+            progress_status = []
+            for node in progress_nodes:
+                progress_status.append('pending')
+    else:
+        # 默认进度节点状态
+        progress_status = []
+        for node in progress_nodes:
+            progress_status.append('pending')
+    
+    # 计算进度百分比
+    progress_percentage = 0
+    if progress_nodes:
+        if task.progress_percentage:
+            progress_percentage = task.progress_percentage
+        else:
+            # 计算进度百分比
+            completed_count = progress_status.count('completed')
+            progress_percentage = int((completed_count / len(progress_nodes)) * 100)
     
     return render(request, 'task_reminder/task_detail.html', {
         'task': task,
         'now': now,
         'tags': tags,
-        'progress_nodes': progress_nodes
+        'progress_nodes': progress_nodes,
+        'progress_status': progress_status,
+        'progress_percentage': progress_percentage
     })
 
 # 更新任务状态视图

@@ -1,5 +1,345 @@
 {% extends 'task_reminder/base_task_form.html' %}
 
+{% block extra_fields %}
+    <!-- 进度可视化 -->
+    <div class="form-group mb-3">
+        <label data-lang="taskProgress">进度</label>
+        <div class="d-flex justify-content-between mb-3" id="progress-container" style="position: relative;" tabindex="-1">
+            <!-- 进度节点将通过JavaScript动态生成 -->
+            <input type="hidden" id="progress_nodes" name="progress_nodes" value="待办
+进行中
+已完成">
+        </div>
+    </div>
+    
+    <!-- 添加节点模态框 -->
+    <div class="modal fade" id="addNodeModal" tabindex="-1" aria-labelledby="addNodeModalLabel" aria-hidden="true" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNodeModalLabel">添加进度节点</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nodeName" class="form-label">节点名称</label>
+                        <input type="text" class="form-control" id="nodeName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="nodeCount" class="form-label">节点数量</label>
+                        <input type="number" class="form-control" id="nodeCount" value="1" min="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirmAddNode">确认添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 节点操作模态框 -->
+    <div class="modal fade" id="nodeActionModal" tabindex="-1" aria-labelledby="nodeActionModalLabel" aria-hidden="true" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="nodeActionModalLabel">节点操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>请选择要对节点执行的操作：</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="editNodeBtn">修改名称</button>
+                    <button type="button" class="btn btn-danger" id="deleteNodeBtn">删除节点</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 修改节点模态框 -->
+    <div class="modal fade" id="editNodeModal" tabindex="-1" aria-labelledby="editNodeModalLabel" aria-hidden="true" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editNodeModalLabel">修改进度节点</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editNodeName" class="form-label">节点名称</label>
+                        <input type="text" class="form-control" id="editNodeName">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirmEditNode">确认修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 确认删除模态框 -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要删除此进度节点吗？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressContainer = document.getElementById('progress-container');
+            const progressNodesInput = document.getElementById('progress_nodes');
+            let currentInsertIndex = 0;
+            let currentEditIndex = -1;
+            
+            // 修复模态框焦点问题
+            function setupModalFocusManagement() {
+                // 监听模态框隐藏事件，确保焦点不会留在隐藏的模态框内
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    modal.addEventListener('hidden.bs.modal', function() {
+                        // 当模态框隐藏时，将焦点移回到进度容器
+                        if (progressContainer) {
+                            progressContainer.focus();
+                        }
+                    });
+                });
+            }
+            
+            // 生成进度节点
+            function generateProgressNodes() {
+                // 清空容器
+                progressContainer.innerHTML = '';
+                
+                // 添加隐藏输入
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'progress_nodes';
+                hiddenInput.name = 'progress_nodes';
+                hiddenInput.value = progressNodesInput.value;
+                progressContainer.appendChild(hiddenInput);
+                
+                // 获取节点列表
+                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                
+                // 创建进度节点
+                nodes.forEach((node, index) => {
+                    const nodeElement = document.createElement('div');
+                    nodeElement.className = 'text-center progress-node';
+                    nodeElement.dataset.index = index;
+                    nodeElement.style.position = 'relative';
+                    nodeElement.style.cursor = 'pointer';
+                    nodeElement.style.flex = '1';
+                    
+                    // 节点内容
+                    nodeElement.innerHTML = `
+                        <div class="d-flex justify-content-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #e9ecef; color: #6c757d;">
+                                ${index + 1}
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span>${node}</span>
+                        </div>
+                    `;
+                    
+                    progressContainer.appendChild(nodeElement);
+                });
+            }
+            
+            // 初始化生成进度节点
+            generateProgressNodes();
+            
+            // 设置模态框焦点管理
+            setupModalFocusManagement();
+            
+            // 点击事件处理
+            progressContainer.addEventListener('click', function(e) {
+                // 确保点击的是progress-container容器内的元素
+                if (!progressContainer.contains(e.target)) {
+                    return;
+                }
+                
+                // 检查是否点击的是圆形节点容器
+                const circleContainer = e.target.closest('.rounded-circle');
+                
+                if (circleContainer) {
+                    // 点击了圆形节点容器，显示操作选项
+                    const progressNode = circleContainer.closest('.progress-node');
+                    if (progressNode) {
+                        const index = parseInt(progressNode.dataset.index);
+                        const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                        
+                        // 保存当前操作的节点索引
+                        currentEditIndex = index;
+                        
+                        // 显示节点操作模态框
+                        const actionModal = new bootstrap.Modal(document.getElementById('nodeActionModal'));
+                        actionModal.show();
+                    }
+                } else {
+                    // 点击了其他区域，添加新节点
+                    const rect = progressContainer.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    
+                    // 获取所有节点元素
+                    const nodeElements = progressContainer.querySelectorAll('.progress-node');
+                    const nodeCount = nodeElements.length;
+                    
+                    // 计算点击位置对应的插入索引
+                    let insertIndex = nodeCount;
+                    
+                    if (nodeCount > 0) {
+                        // 遍历节点，找到点击位置所在的区间
+                        for (let i = 0; i < nodeElements.length; i++) {
+                            const nodeRect = nodeElements[i].getBoundingClientRect();
+                            const nodeLeft = nodeRect.left - rect.left;
+                            const nodeRight = nodeRect.right - rect.left;
+                            const nodeCenter = (nodeLeft + nodeRight) / 2;
+                            
+                            if (clickX < nodeCenter) {
+                                insertIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 保存当前插入索引
+                    currentInsertIndex = insertIndex;
+                    
+                    // 重置模态框值
+                    document.getElementById('nodeName').value = '';
+                    document.getElementById('nodeCount').value = '1';
+                    
+                    // 显示模态框
+                    const addModal = new bootstrap.Modal(document.getElementById('addNodeModal'));
+                    addModal.show();
+                }
+            });
+            
+            // 确认添加节点
+            document.getElementById('confirmAddNode').addEventListener('click', function() {
+                const nodeName = document.getElementById('nodeName').value.trim();
+                const nodeCountToAdd = parseInt(document.getElementById('nodeCount').value);
+                
+                if (!nodeName || isNaN(nodeCountToAdd) || nodeCountToAdd < 1) {
+                    alert('请输入有效的节点名称和数量');
+                    return;
+                }
+                
+                // 获取当前节点列表
+                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                
+                // 添加新节点
+                for (let i = 0; i < nodeCountToAdd; i++) {
+                    const newNodeName = nodeCountToAdd > 1 ? `${nodeName} ${i + 1}` : nodeName;
+                    nodes.splice(currentInsertIndex + i, 0, newNodeName);
+                }
+                
+                // 更新隐藏输入
+                progressNodesInput.value = nodes.join('\n');
+                
+                // 重新生成进度节点
+                generateProgressNodes();
+                
+                // 关闭模态框
+                const addModal = bootstrap.Modal.getInstance(document.getElementById('addNodeModal'));
+                addModal.hide();
+            });
+            
+            // 节点操作模态框 - 修改名称
+            document.getElementById('editNodeBtn').addEventListener('click', function() {
+                // 获取当前节点名称
+                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                const currentName = nodes[currentEditIndex];
+                
+                // 设置修改模态框值
+                document.getElementById('editNodeName').value = currentName;
+                
+                // 关闭操作模态框
+                const actionModal = bootstrap.Modal.getInstance(document.getElementById('nodeActionModal'));
+                actionModal.hide();
+                
+                // 显示修改模态框
+                const editModal = new bootstrap.Modal(document.getElementById('editNodeModal'));
+                editModal.show();
+            });
+            
+            // 节点操作模态框 - 删除节点
+            document.getElementById('deleteNodeBtn').addEventListener('click', function() {
+                // 关闭操作模态框
+                const actionModal = bootstrap.Modal.getInstance(document.getElementById('nodeActionModal'));
+                actionModal.hide();
+                
+                // 显示确认删除模态框
+                const deleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+                deleteModal.show();
+            });
+            
+            // 确认修改节点
+            document.getElementById('confirmEditNode').addEventListener('click', function() {
+                const newName = document.getElementById('editNodeName').value.trim();
+                
+                if (!newName) {
+                    alert('请输入有效的节点名称');
+                    return;
+                }
+                
+                // 获取当前节点列表
+                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                
+                // 更新节点名称
+                if (currentEditIndex >= 0 && currentEditIndex < nodes.length) {
+                    nodes[currentEditIndex] = newName;
+                    progressNodesInput.value = nodes.join('\n');
+                    generateProgressNodes();
+                }
+                
+                // 关闭模态框
+                const editModal = bootstrap.Modal.getInstance(document.getElementById('editNodeModal'));
+                editModal.hide();
+            });
+            
+            // 确认删除节点
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                // 获取当前节点列表
+                const nodes = progressNodesInput.value.trim().split('\n').filter(node => node.trim());
+                
+                // 确保至少保留一个节点
+                if (nodes.length <= 1) {
+                    alert('至少需要保留一个进度节点');
+                    return;
+                }
+                
+                // 删除节点
+                if (currentEditIndex >= 0 && currentEditIndex < nodes.length) {
+                    nodes.splice(currentEditIndex, 1);
+                    progressNodesInput.value = nodes.join('\n');
+                    generateProgressNodes();
+                }
+                
+                // 关闭模态框
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                deleteModal.hide();
+            });
+        });
+    </script>
+{% endblock %}
+
 {% with page_title="添加任务" page_title_key="taskAdd" %}
     {{ block.super }}
 {% endwith %}

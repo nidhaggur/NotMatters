@@ -210,7 +210,21 @@ function showReminderPopup(task, soundUrl) {
 
     // 确定状态选项
     var statusOptions = [];
-    var progress_nodes = task.progress_nodes || ['待办', '进行中', '已完成'];
+    var progress_nodes = [];
+    if (task.progress_nodes) {
+        // 如果是字符串，按换行符分割
+        if (typeof task.progress_nodes === 'string') {
+            progress_nodes = task.progress_nodes.split('\n').filter(node => node.trim());
+        }
+        // 如果是数组，直接使用
+        else if (Array.isArray(task.progress_nodes)) {
+            progress_nodes = task.progress_nodes;
+        }
+    }
+    // 如果没有进度节点，使用默认值
+    if (progress_nodes.length === 0) {
+        progress_nodes = ['待办', '进行中', '已完成'];
+    }
     var current_node_index = task.current_node_index || 0;
 
     if (task.status === 'completed') {
@@ -390,7 +404,17 @@ function updateTaskStatusAndClose(taskId, status, buttonElement) {
             currentPopup = null;
 
             // 处理队列中的下一个提醒
-            setTimeout(processReminderQueue, 300);
+            setTimeout(() => {
+                processReminderQueue();
+                
+                // 检查是否还有其他提醒
+                if (reminderQueue.length === 0) {
+                    // 没有更多提醒，刷新页面以更新任务状态
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            }, 300);
         }
     })
     .catch(error => {

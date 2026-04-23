@@ -114,6 +114,7 @@
   "taskTags": "标签",
   "taskTagsPlaceholder": "例如：学习,工作,生活",
   "taskCancel": "取消",
+  "taskProgress": "进度",
   "todayTasks": "今日事项",
   "overdueTasks": "过期事项",
   "calendar": "日历",
